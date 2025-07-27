@@ -2,7 +2,10 @@ module github.com/klementev-io/sandbox
 
 go 1.24.5
 
-require github.com/spf13/viper v1.20.1
+require (
+	github.com/spf13/viper v1.20.1
+	golang.org/x/sync v0.10.0
+)
 
 require (
 	github.com/fsnotify/fsnotify v1.8.0 // indirect

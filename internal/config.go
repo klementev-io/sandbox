@@ -19,7 +19,7 @@ type Config struct {
 
 type HTTPServerConfig struct {
 	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
+	Port string `mapstructure:"port"`
 }
 
 type LoggerConfig struct {
