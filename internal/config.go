@@ -14,6 +14,7 @@ import (
 
 type Config struct {
 	HTTPServer HTTPServerConfig `mapstructure:"http_server"`
+	Logger     LoggerConfig     `mapstructure:"logger"`
 }
 
 type HTTPServerConfig struct {
@@ -21,21 +22,30 @@ type HTTPServerConfig struct {
 	Port int    `mapstructure:"port"`
 }
 
+type LoggerConfig struct {
+	Level  string `mapstructure:"level"`
+	Format string `mapstructure:"format"`
+}
+
 func LoadConfig() (Config, error) {
-	cfgFilePath := flag.String("c", "./configs/config.yaml", "config file path")
+	const (
+		envPrefix      = "SX"
+		configFlagName = "c"
+	)
+
+	cfgFilePath := flag.String(configFlagName, "./configs/config.yaml", "config file path")
 	flag.Parse()
 
 	viper.SetConfigName(path.Base(*cfgFilePath))
 	viper.SetConfigType(path.Ext(*cfgFilePath)[1:])
 	viper.AddConfigPath(path.Dir(*cfgFilePath))
 
-	viper.SetEnvPrefix("SX")
+	viper.SetEnvPrefix(envPrefix)
 	viper.AutomaticEnv()
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	_ = viper.BindEnv("http_server.host")
-	_ = viper.BindEnv("http_server.port")
+	bindEnvs()
 
 	if err := viper.ReadInConfig(); err != nil {
 		if errors.As(err, &viper.ConfigFileNotFoundError{}) {
@@ -51,4 +61,11 @@ func LoadConfig() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func bindEnvs() {
+	_ = viper.BindEnv("http_server.host")
+	_ = viper.BindEnv("http_server.port")
+	_ = viper.BindEnv("logger.level")
+	_ = viper.BindEnv("logger.format")
 }
