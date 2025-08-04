@@ -18,8 +18,9 @@ type Config struct {
 }
 
 type HTTPServerConfig struct {
-	Host string `mapstructure:"host"`
-	Port string `mapstructure:"port"`
+	Host      string `mapstructure:"host"`
+	Port      string `mapstructure:"port"`
+	PprofPort string `mapstructure:"pprof_port"`
 }
 
 type LoggerConfig struct {
@@ -66,6 +67,7 @@ func LoadConfig() (Config, error) {
 func bindEnvs() {
 	_ = viper.BindEnv("http_server.host")
 	_ = viper.BindEnv("http_server.port")
+	_ = viper.BindEnv("http_server.pprof_port")
 	_ = viper.BindEnv("logger.level")
 	_ = viper.BindEnv("logger.format")
 }

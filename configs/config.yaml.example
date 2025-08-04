@@ -1,6 +1,7 @@
 http_server:
   host: 127.0.0.1
   port: 8080
-Logger:
+  pprof_port: 6060
+logger:
   level: info
   format: text

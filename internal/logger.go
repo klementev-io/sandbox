@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"fmt"
+	"errors"
 	"log/slog"
 	"os"
 )
@@ -23,7 +23,7 @@ func SetupLogger(level string, format string) error {
 	case "text":
 		h = slog.NewTextHandler(os.Stdout, opts)
 	default:
-		return fmt.Errorf("invalid logger format: %s", format)
+		return errors.New("invalid logger format: " + format)
 	}
 
 	slog.SetDefault(slog.New(h))

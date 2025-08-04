@@ -8,16 +8,20 @@ import (
 	"github.com/klementev-io/sandbox/internal"
 )
 
-func main() {
+func run() int {
 	cfg, err := internal.LoadConfig()
 	if err != nil {
 		slog.Default().ErrorContext(context.Background(), "could not load config", "error", err)
-		os.Exit(1)
+		return 1
 	}
-
 	err = internal.Run(cfg)
 	if err != nil {
 		slog.Default().ErrorContext(context.Background(), "failed to run application", "error", err)
-		os.Exit(1)
+		return 1
 	}
+	return 0
+}
+
+func main() {
+	os.Exit(run())
 }
