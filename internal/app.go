@@ -49,10 +49,7 @@ func startAPIServer(ctx context.Context, eg *errgroup.Group, cfg config.APIServe
 	router := gin.New()
 
 	router.Use(
-		gin.CustomRecoveryWithWriter(nil, func(c *gin.Context, err any) {
-			slog.Default().ErrorContext(c, "panic recovered", slog.Any("error", err))
-			c.AbortWithStatus(http.StatusInternalServerError)
-		}),
+		middleware.Recovery(),
 		middleware.GinLogger(slog.Default()),
 	)
 
