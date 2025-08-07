@@ -6,10 +6,11 @@ import (
 	"os"
 
 	"github.com/klementev-io/sandbox/internal"
+	"github.com/klementev-io/sandbox/internal/config"
 )
 
 func run() int {
-	cfg, err := internal.LoadConfig()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		slog.Default().ErrorContext(context.Background(), "could not load config", "error", err)
 		return 1

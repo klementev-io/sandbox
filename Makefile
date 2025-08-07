@@ -1,6 +1,6 @@
 APP_NAME=sandbox
 
-.PHONY: run lint docker-build stress-test install
+.PHONY: run lint docker-build test stress-test install
 
 run:
 	@echo "Running $(APP_NAME)..."
@@ -9,11 +9,19 @@ run:
 lint:
 	golangci-lint run ./...
 
+test:
+	go test ./...
+
 docker-build:
 	docker build -t sandbox:latest .
 
 docker-run:
-	docker run --name sandbox -p 8080:80 sandbox:latest
+	docker run \
+		--rm \
+		--name sandbox \
+		-p 8080:8080 \
+		-v ./configs/docker-config.yaml:/etc/sandbox/config.yaml \
+		sandbox:latest
 
 STRESS_RATE=1000
 STRESS_DURATION=60s

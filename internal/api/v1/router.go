@@ -1,13 +1,15 @@
 package v1
 
-import "net/http"
+import (
+	"github.com/gin-gonic/gin"
+)
 
-func SetupRouter() http.Handler {
-	h := new(Handler)
-
-	router := http.NewServeMux()
-
-	router.HandleFunc("/api/v1/health", h.Health)
-
-	return router
+func RegisterHandlers(router *gin.Engine, handlers *Handlers) {
+	api := router.Group("api")
+	{
+		v1 := api.Group("v1")
+		{
+			v1.GET("health", handlers.Health)
+		}
+	}
 }

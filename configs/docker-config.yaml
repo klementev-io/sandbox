@@ -1,0 +1,11 @@
+service:
+  name: "sandbox"
+  version: "unknown"
+
+api_server:
+  host: "0.0.0.0"
+  port: 8080
+  pprof: true
+
+logger:
+  level: "info"

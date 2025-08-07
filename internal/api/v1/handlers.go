@@ -1,27 +1,13 @@
 package v1
 
 import (
-	"encoding/json"
-	"log/slog"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-type Handler struct{}
+type Handlers struct{}
 
-func (h Handler) Health(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	payload := struct {
-		Status string `json:"status"`
-	}{
-		Status: "ok",
-	}
-
-	err := json.NewEncoder(w).Encode(payload)
-	if err != nil {
-		slog.Default().ErrorContext(r.Context(), "encoding payload", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
+func (h Handlers) Health(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
