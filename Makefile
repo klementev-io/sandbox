@@ -4,7 +4,7 @@ APP_NAME=sandbox
 
 run:
 	@echo "Running $(APP_NAME)..."
-	go run ./cmd/$(APP_NAME) --config ./configs/default-config.yaml
+	go run ./cmd/$(APP_NAME) --c ./configs/config.yaml
 
 lint:
 	@echo "Linting $(APP_NAME)..."
@@ -27,10 +27,9 @@ docker-run:
 	docker run --rm \
 		-p 8080:8080 \
 		-v ./configs/config.yaml:/etc/sandbox/configs/config.yaml:ro \
-		sandbox:latest --config /etc/sandbox/configs/config.yaml
-#		sandbox:latest
+		sandbox:latest --c /etc/sandbox/configs/config.yaml
 
-GOLANGCI_VERSION=v2.3.0
+GOLANGCI_VERSION=v2.3.1
 VEGETA_VERSION=v12.12.0
 
 install:

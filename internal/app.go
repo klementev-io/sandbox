@@ -2,44 +2,43 @@ package internal
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
-	"net"
-	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
-	"github.com/klementev-io/sandbox/internal/config"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/klementev-io/sandbox/internal/api/middleware"
-	v1 "github.com/klementev-io/sandbox/internal/api/v1"
+	"github.com/klementev-io/sandbox/internal/api/http"
+	"github.com/klementev-io/sandbox/internal/api/http/middleware"
+	v1 "github.com/klementev-io/sandbox/internal/api/http/v1"
+	"github.com/klementev-io/sandbox/internal/config"
 )
 
-const (
-	readHeaderTimeout = 5 * time.Second
-	interruptTimeout  = 2 * time.Second
-)
-
-func Run(cfg config.Cfg) error {
-	if err := setupLogger(cfg.Log.Level, cfg.Service.Name); err != nil {
-		return fmt.Errorf("failed to setup logger: %w", err)
+func Run(cfg *config.Cfg) error {
+	if err := SetupLogger(cfg.Log.Level, LogWithService(cfg.Service)); err != nil {
+		return fmt.Errorf("could not setup logger: %w", err)
 	}
 
-	eg, ctx := errgroup.WithContext(context.Background())
-	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+	slog.Default().InfoContext(context.Background(), "starting service")
+
+	eg, egCtx := errgroup.WithContext(context.Background())
+	ctx, stop := signal.NotifyContext(egCtx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	defer stop()
 
 	startAPIServer(ctx, eg, cfg.APIServer)
 
-	if err := eg.Wait(); err != nil {
-		return fmt.Errorf("server exited with error: %w", err)
+	if cfg.PprofServer.Enable {
+		startPprofServer(ctx, eg, cfg.PprofServer)
 	}
+
+	if err := eg.Wait(); err != nil {
+		return fmt.Errorf("service exited with error: %w", err)
+	}
+
+	slog.Default().InfoContext(context.Background(), "service successfully completed")
 
 	return nil
 }
@@ -54,56 +53,45 @@ func startAPIServer(ctx context.Context, eg *errgroup.Group, cfg config.APIServe
 		middleware.GinLogger(),
 	)
 
-	v1.RegisterHandlers(router, &v1.Handlers{})
+	v1.RegisterHandlers(router, v1.NewHandlers())
 
-	if cfg.Pprof {
-		pprof.Register(router)
-	}
-
-	httpSrv := http.Server{
-		Addr:              net.JoinHostPort(cfg.Host, cfg.Port),
-		Handler:           router,
-		ReadHeaderTimeout: readHeaderTimeout,
-	}
+	apiSrv := http.NewServer(
+		cfg.Host,
+		cfg.Port,
+		router,
+		slog.Default().With("server", "api"),
+	)
 
 	eg.Go(func() error {
-		slog.InfoContext(ctx, "starting api server", "address", httpSrv.Addr)
-		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			return fmt.Errorf("failed to start http server: %w", err)
-		}
-		slog.InfoContext(ctx, "api server shutdown gracefully")
-		return nil
+		return apiSrv.Start(ctx)
 	})
 
 	eg.Go(func() error {
 		<-ctx.Done()
-		timeoutCtx, cancel := context.WithTimeout(context.Background(), interruptTimeout)
-		defer cancel()
-		err := httpSrv.Shutdown(timeoutCtx)
-		if err != nil {
-			return err
-		}
-		return nil
+		return apiSrv.Shutdown()
 	})
 }
 
-func setupLogger(level string, service string) error {
-	var lvl slog.Level
-	if err := lvl.UnmarshalText([]byte(level)); err != nil {
-		return err
-	}
+func startPprofServer(ctx context.Context, eg *errgroup.Group, cfg config.PprofServer) {
+	gin.SetMode(gin.ReleaseMode)
 
-	handler := slog.NewJSONHandler(
-		os.Stdout,
-		&slog.HandlerOptions{
-			Level: lvl,
-		},
+	router := gin.New()
+
+	pprof.Register(router)
+
+	pprofSrv := http.NewServer(
+		cfg.Host,
+		cfg.Port,
+		router,
+		slog.Default().With("server", "pprof"),
 	)
 
-	l := slog.New(handler)
-	l = l.With(slog.String("service", service))
+	eg.Go(func() error {
+		return pprofSrv.Start(ctx)
+	})
 
-	slog.SetDefault(l)
-
-	return nil
+	eg.Go(func() error {
+		<-ctx.Done()
+		return pprofSrv.Shutdown()
+	})
 }

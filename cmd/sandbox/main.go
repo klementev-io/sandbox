@@ -10,13 +10,13 @@ import (
 )
 
 func run() int {
-	cfg, err := config.LoadConfig()
+	cfg, err := internal.LoadConfig[config.Cfg]()
 	if err != nil {
 		slog.Default().ErrorContext(context.Background(), "could not load config", "error", err)
 		return 1
 	}
-	err = internal.Run(cfg)
-	if err != nil {
+
+	if err = internal.Run(cfg); err != nil {
 		slog.Default().ErrorContext(context.Background(), "failed to run application", "error", err)
 		return 1
 	}

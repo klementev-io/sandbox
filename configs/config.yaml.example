@@ -1,0 +1,13 @@
+service: sandbox
+
+api_server:
+  host: "127.0.0.1"
+  port: 8080
+
+pprof_server:
+  host: "127.0.0.1"
+  port: 6060
+  enable: false
+
+log:
+  level: info

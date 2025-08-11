@@ -16,15 +16,16 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /tmp/sandbox ./cmd/san
 
 FROM alpine:${ALPINE_VERSION}
 
-RUN addgroup -S sandbox && adduser -S sandbox -G sandbox && \
+RUN addgroup -S sandbox && \
+    adduser -S sandbox -G sandbox && \
     mkdir -p /etc/sandbox
 
 COPY --from=builder /tmp/sandbox /usr/local/bin/sandbox
-COPY --from=builder /app/configs/default-config.yaml /etc/sandbox/config.yaml
+COPY --from=builder /app/configs/config.yaml.example /etc/sandbox/config.yaml
 
 USER sandbox
 
 EXPOSE 8080
 
 ENTRYPOINT ["/usr/local/bin/sandbox"]
-CMD ["--config", "/etc/sandbox/config.yaml"]
+CMD ["--c", "/etc/sandbox/config.yaml"]
