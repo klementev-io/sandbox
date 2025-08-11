@@ -20,6 +20,7 @@ RUN addgroup -S sandbox && adduser -S sandbox -G sandbox && \
     mkdir -p /etc/sandbox
 
 COPY --from=builder /tmp/sandbox /usr/local/bin/sandbox
+COPY --from=builder /app/configs/default-config.yaml /etc/sandbox/config.yaml
 
 USER sandbox
 

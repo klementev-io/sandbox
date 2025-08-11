@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -26,12 +27,12 @@ const (
 )
 
 func Run(cfg config.Cfg) error {
-	if err := setupLogger(cfg.Logger.Level, cfg.Service.Name, cfg.Service.Version); err != nil {
+	if err := setupLogger(cfg.Log.Level, cfg.Service.Name); err != nil {
 		return fmt.Errorf("failed to setup logger: %w", err)
 	}
 
 	eg, ctx := errgroup.WithContext(context.Background())
-	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	defer stop()
 
 	startAPIServer(ctx, eg, cfg.APIServer)
@@ -50,7 +51,7 @@ func startAPIServer(ctx context.Context, eg *errgroup.Group, cfg config.APIServe
 
 	router.Use(
 		middleware.Recovery(),
-		middleware.GinLogger(slog.Default()),
+		middleware.GinLogger(),
 	)
 
 	v1.RegisterHandlers(router, &v1.Handlers{})
@@ -86,7 +87,7 @@ func startAPIServer(ctx context.Context, eg *errgroup.Group, cfg config.APIServe
 	})
 }
 
-func setupLogger(level string, service string, version string) error {
+func setupLogger(level string, service string) error {
 	var lvl slog.Level
 	if err := lvl.UnmarshalText([]byte(level)); err != nil {
 		return err
@@ -100,12 +101,7 @@ func setupLogger(level string, service string, version string) error {
 	)
 
 	l := slog.New(handler)
-	l = l.With(
-		slog.Group("service",
-			slog.String("name", service),
-			slog.String("version", version),
-		),
-	)
+	l = l.With(slog.String("service", service))
 
 	slog.SetDefault(l)
 
