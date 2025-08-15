@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GinLogger() gin.HandlerFunc {
+func GinLogger() func(ctx *gin.Context) {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery

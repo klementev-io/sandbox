@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/refs/tags/v2.5.0/configuration-schema.json
+package: v1
+
+generate:
+  models: true
+  client: false
+  gin-server: true
+  embedded-spec: false
+
+output: ../../gen/v1/api.gen.go
+
+output-options:
+  name-normalizer: ToCamelCaseWithInitialisms

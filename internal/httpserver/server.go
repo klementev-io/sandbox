@@ -1,4 +1,4 @@
-package http
+package httpserver
 
 import (
 	"context"
@@ -15,23 +15,23 @@ const (
 	interruptTimeout  = 2 * time.Second
 )
 
-type Server struct {
+type Srv struct {
 	server *http.Server
 	log    *slog.Logger
 }
 
-func NewServer(host, port string, handler http.Handler, log *slog.Logger) *Server {
-	return &Server{
+func New(name, host, port string, handler http.Handler) *Srv {
+	return &Srv{
 		server: &http.Server{
 			Addr:        net.JoinHostPort(host, port),
 			Handler:     handler,
 			ReadTimeout: readHeaderTimeout,
 		},
-		log: log,
+		log: slog.Default().With(slog.String("server", name)),
 	}
 }
 
-func (s *Server) Start(ctx context.Context) error {
+func (s *Srv) Start(ctx context.Context) error {
 	s.log.InfoContext(ctx, "starting http server", "address", s.server.Addr)
 	if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("failed to start http server: %w", err)
@@ -41,7 +41,7 @@ func (s *Server) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) Shutdown() error {
+func (s *Srv) Shutdown() error {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), interruptTimeout)
 	defer cancel()
 

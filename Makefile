@@ -1,4 +1,4 @@
-.PHONY: run lint test stress-test docker-build docker-run install
+.PHONY: run lint test gen-api stress-test docker-build docker-run install
 
 APP_NAME=sandbox
 
@@ -8,17 +8,20 @@ run:
 
 lint:
 	@echo "Linting $(APP_NAME)..."
-	golangci-lint run ./...
+	go tool golangci-lint run ./...
 
 test:
 	@echo "Running tests $(APP_NAME)..."
 	go test ./...
 
+generate:
+	go generate ./...
+
 STRESS_RATE=1000
 STRESS_DURATION=60s
 
 stress-test:
-	echo "GET http://127.0.0.1:8080/api/v1/health" | vegeta attack -rate=$(STRESS_RATE) -duration=$(STRESS_DURATION) | vegeta report
+	echo "GET http://127.0.0.1:8080/health" | go tool vegeta attack -rate=$(STRESS_RATE) -duration=$(STRESS_DURATION) | go tool vegeta report
 
 docker-build:
 	docker build -t sandbox:latest .
@@ -31,7 +34,9 @@ docker-run:
 
 GOLANGCI_VERSION=v2.3.1
 VEGETA_VERSION=v12.12.0
+OAPI_CODEGEN_VERSION=v2.5.0
 
 install:
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_VERSION)
-	go install github.com/tsenart/vegeta/v12@$(VEGETA_VERSION)
+	go get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_VERSION)
+	go get -tool github.com/tsenart/vegeta/v12@$(VEGETA_VERSION)
+	go get -tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION)

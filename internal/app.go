@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os/signal"
 	"syscall"
 
@@ -11,10 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/klementev-io/sandbox/internal/api/http"
-	"github.com/klementev-io/sandbox/internal/api/http/middleware"
-	v1 "github.com/klementev-io/sandbox/internal/api/http/v1"
+	v1 "github.com/klementev-io/sandbox/api/gen/v1"
+
+	handlersv1 "github.com/klementev-io/sandbox/internal/api/handlers/v1"
+	"github.com/klementev-io/sandbox/internal/api/middleware"
 	"github.com/klementev-io/sandbox/internal/config"
+	"github.com/klementev-io/sandbox/internal/httpserver"
 )
 
 func Run(cfg *config.Cfg) error {
@@ -46,21 +49,23 @@ func Run(cfg *config.Cfg) error {
 func startAPIServer(ctx context.Context, eg *errgroup.Group, cfg config.APIServer) {
 	gin.SetMode(gin.ReleaseMode)
 
+	h := handlersv1.NewHandlers()
+
 	router := gin.New()
 
-	router.Use(
-		middleware.Recovery(),
-		middleware.GinLogger(),
-	)
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
-	v1.RegisterHandlers(router, v1.NewHandlers())
+	v1.RegisterHandlersWithOptions(router, h, v1.GinServerOptions{
+		BaseURL: "/api/v1",
+		Middlewares: []v1.MiddlewareFunc{
+			middleware.Recovery(),
+			middleware.GinLogger(),
+		},
+	})
 
-	apiSrv := http.NewServer(
-		cfg.Host,
-		cfg.Port,
-		router,
-		slog.Default().With("server", "api"),
-	)
+	apiSrv := httpserver.New("api", cfg.Host, cfg.Port, router)
 
 	eg.Go(func() error {
 		return apiSrv.Start(ctx)
@@ -73,18 +78,11 @@ func startAPIServer(ctx context.Context, eg *errgroup.Group, cfg config.APIServe
 }
 
 func startPprofServer(ctx context.Context, eg *errgroup.Group, cfg config.PprofServer) {
-	gin.SetMode(gin.ReleaseMode)
-
 	router := gin.New()
 
 	pprof.Register(router)
 
-	pprofSrv := http.NewServer(
-		cfg.Host,
-		cfg.Port,
-		router,
-		slog.Default().With("server", "pprof"),
-	)
+	pprofSrv := httpserver.New("pprof", cfg.Host, cfg.Port, router)
 
 	eg.Go(func() error {
 		return pprofSrv.Start(ctx)
