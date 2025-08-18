@@ -12,9 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
-	v1 "github.com/klementev-io/sandbox/api/gen/v1"
+	v1 "github.com/klementev-io/sandbox/api/gen/api/v1"
 
-	handlersv1 "github.com/klementev-io/sandbox/internal/api/handlers/v1"
+	"github.com/klementev-io/sandbox/internal/api/handlers"
 	"github.com/klementev-io/sandbox/internal/api/middleware"
 	"github.com/klementev-io/sandbox/internal/config"
 	"github.com/klementev-io/sandbox/internal/httpserver"
@@ -25,13 +25,15 @@ func Run(cfg *config.Cfg) error {
 		return fmt.Errorf("could not setup logger: %w", err)
 	}
 
+	apiHandlers := handlers.New()
+
 	slog.Default().InfoContext(context.Background(), "starting service")
 
 	eg, egCtx := errgroup.WithContext(context.Background())
 	ctx, stop := signal.NotifyContext(egCtx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	defer stop()
 
-	startAPIServer(ctx, eg, cfg.APIServer)
+	startAPIServer(ctx, eg, cfg.APIServer, apiHandlers)
 
 	if cfg.PprofServer.Enable {
 		startPprofServer(ctx, eg, cfg.PprofServer)
@@ -46,11 +48,7 @@ func Run(cfg *config.Cfg) error {
 	return nil
 }
 
-func startAPIServer(ctx context.Context, eg *errgroup.Group, cfg config.APIServer) {
-	gin.SetMode(gin.ReleaseMode)
-
-	h := handlersv1.NewHandlers()
-
+func startAPIServer(ctx context.Context, eg *errgroup.Group, cfg config.APIServer, h v1.ServerInterface) {
 	router := gin.New()
 
 	router.GET("/health", func(c *gin.Context) {
@@ -92,4 +90,9 @@ func startPprofServer(ctx context.Context, eg *errgroup.Group, cfg config.PprofS
 		<-ctx.Done()
 		return pprofSrv.Shutdown()
 	})
+}
+
+//nolint:gochecknoinits // this is init
+func init() {
+	gin.SetMode(gin.ReleaseMode)
 }

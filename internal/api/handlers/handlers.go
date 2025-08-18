@@ -1,10 +1,10 @@
-package v1
+package handlers
 
 import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	v1 "github.com/klementev-io/sandbox/api/gen/v1"
+	v1 "github.com/klementev-io/sandbox/api/gen/api/v1"
 	"github.com/oapi-codegen/runtime/types"
 )
 
@@ -13,7 +13,7 @@ var _ v1.ServerInterface = (*Handlers)(nil)
 type Handlers struct {
 }
 
-func NewHandlers() *Handlers {
+func New() *Handlers {
 	return &Handlers{}
 }
 

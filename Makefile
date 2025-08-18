@@ -1,4 +1,4 @@
-.PHONY: run lint test gen-api stress-test docker-build docker-run install
+.PHONY: run lint test gen-api stress-test docker-build docker-run tools
 
 APP_NAME=sandbox
 
@@ -32,11 +32,11 @@ docker-run:
 		-v ./configs/config.yaml:/etc/sandbox/configs/config.yaml:ro \
 		sandbox:latest --c /etc/sandbox/configs/config.yaml
 
-GOLANGCI_VERSION=v2.3.1
+GOLANGCI_VERSION=v2.4.0
 VEGETA_VERSION=v12.12.0
 OAPI_CODEGEN_VERSION=v2.5.0
 
-install:
+tools:
 	go get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_VERSION)
 	go get -tool github.com/tsenart/vegeta/v12@$(VEGETA_VERSION)
 	go get -tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION)
